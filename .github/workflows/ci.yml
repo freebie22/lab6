@@ -54,3 +54,25 @@ jobs:
             -Dsonar.organization=freebie22-1
             -Dsonar.sources=src
             -Dsonar.host.url=https://sonarcloud.io
+  review-check:
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Перевірка наявності схваленого код-рев’ю
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const approved = reviews.data.some(review => review.state === 'APPROVED');
+            if (!approved) {
+              core.setFailed("❌ Код-рев’ю не схвалено. Потрібне хоча б одне APPROVED рев’ю.");
+            } else {
+              console.log("✅ Є хоча б одне схвалене код-рев’ю.");
+            }
