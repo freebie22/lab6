@@ -50,6 +50,12 @@ jobs:
           cloc src/ > cloc-report.txt
           cat cloc-report.txt
 
+      - name: Upload LOC report
+        uses: actions/upload-artifact@v4
+        with:
+          name: loc-report
+          path: cloc-report.txt
+
       - name: Run SonarQube analysis
         uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
@@ -90,3 +96,25 @@ jobs:
             } else {
               console.log("✅ Є хоча б одне схвалене код-рев’ю.");
             }
+
+  check-develop-changes:
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    needs: [review-check]
+    steps:
+      - name: Checkout develop branch
+        uses: actions/checkout@v3
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Pull latest changes and log commits
+        run: |
+          git pull origin develop
+          git log --oneline --graph > develop_changes.txt
+          cat develop_changes.txt
+      - name: Upload develop branch changes
+        uses: actions/upload-artifact@v4
+        with:
+          name: develop-changes
+          path: develop_changes.txt
